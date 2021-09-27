@@ -52,7 +52,7 @@ namespace SystemData
             Console.WriteLine();
             using (var db = new ContactsDB(dbName))
             {
-                contact = db.Contacts.Find(567);
+                contact = db.Contacts.Find(contact.Id);
                 contact.Name = "Иванов Иван Иваныч";
                 db.SaveChanges();
                 contacts = db.Contacts.ToList();
