@@ -63,9 +63,15 @@ namespace SystemData
             Console.WriteLine();
             List<PhoneEntity> phones;
             using (var db = new ContactsDB(dbName))
+            {
                 phones = db.Phones.Where(ph => ph.ContactId == 567).ToList();
+                Console.Write("Пауза во время открытого ContactsDB....");
+                Console.ReadLine();
+            }
 
             Console.WriteLine(string.Join(Environment.NewLine, phones.Select(ph => $"{ph.ContactId}-{ph.Id} {ph.Title}: {ph.Number}")));
+                Console.Write("Пауза перед завершением....");
+                Console.ReadLine();
 
         }
     }
