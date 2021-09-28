@@ -12,17 +12,17 @@ namespace SystemData
         {
             string dbName = @"C:\SQLite\contacs.db";
 
-            Console.Write("Удалить базу и папку? (Y + Enter): ");
-            if (Console.ReadLine().ToUpper() == "Y")
-            {
-                // Удаление  бызы и папки если они есть
-                if (File.Exists(dbName))
-                    File.Delete(dbName);
+            //Console.Write("Удалить базу и папку? (Y + Enter): ");
+            //if (Console.ReadLine().ToUpper() == "Y")
+            //{
+            //    // Удаление  бызы и папки если они есть
+            //    if (File.Exists(dbName))
+            //        File.Delete(dbName);
 
-                var folder = Path.GetDirectoryName(dbName);
-                if (Directory.Exists(folder))
-                    Directory.Delete(folder);
-            }
+            //    var folder = Path.GetDirectoryName(dbName);
+            //    if (Directory.Exists(folder))
+            //        Directory.Delete(folder);
+            //}
 
             // Запрос к базе. При первом запросе, если нет базы,
             // то она автоматически создаётся и
@@ -39,7 +39,8 @@ namespace SystemData
 
             // Добавление одной записи
             Console.WriteLine();
-            var contact = new ContactEntity() { Name = "Борис" };
+            Console.Write("Введите имя для добавляемого контакта: ");
+            var contact = new ContactEntity() { Name = Console.ReadLine() };
             using (var db = new ContactsDB(dbName))
             {
                 db.Contacts.Add(contact);
@@ -48,12 +49,38 @@ namespace SystemData
             }
             Console.WriteLine(string.Join(Environment.NewLine, contacts.Select(c => $"{c.Id}: {c.Name}")));
 
+
+        inputId:
             // Изменение одной записи
             Console.WriteLine();
+            Console.Write("Введите id изменяемого контакта (Enter - будет изменён последний): ");
+            int id;
+            string idStr = Console.ReadLine();
+            if (string.IsNullOrWhiteSpace(idStr))
+            {
+                id = -1;
+            }
+            else if (!int.TryParse(idStr, out id))
+            {
+                Console.WriteLine("Это не номер.");
+                goto inputId;
+            }
+
             using (var db = new ContactsDB(dbName))
             {
-                contact = db.Contacts.Find(contact.Id);
-                contact.Name = "Иванов Иван Иваныч";
+                if (id == -1)
+                    contact = db.Contacts.Last();
+                else
+                {
+                    contact = db.Contacts.Find(id);
+                    if (contact == null)
+                    {
+                        Console.WriteLine("Контакта с таким Id нет.");
+                        goto inputId;
+                    }
+                }
+                Console.Write("Введите имя для изменяемого контакта: ");
+                contact.Name = Console.ReadLine();
                 db.SaveChanges();
                 contacts = db.Contacts.ToList();
             };
@@ -70,8 +97,8 @@ namespace SystemData
             }
 
             Console.WriteLine(string.Join(Environment.NewLine, phones.Select(ph => $"{ph.ContactId}-{ph.Id} {ph.Title}: {ph.Number}")));
-                Console.Write("Пауза перед завершением....");
-                Console.ReadLine();
+            Console.Write("Пауза перед завершением....");
+            Console.ReadLine();
 
         }
     }
