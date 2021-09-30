@@ -5,11 +5,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace SystemDataModel
 {
     [Table("Phones")]
-    public class PhoneEntity
+    public class PhoneEntity : Entity<PhoneDto, PhoneEntity>
     {
-        [Key]
-        public int Id { get; set; }
-
         [Required]
         [Index]
         public int ContactId { get; set; }
@@ -18,8 +15,28 @@ namespace SystemDataModel
         public string Title { get; set; }
 
         [Required]
-        //[Index]
+        [Index]
         public string Number { get; set; }
+
+        public override PhoneDto Create()
+        {
+            return new PhoneDto(Id.Value, ContactId, Title, Number);
+        }
+
+        protected override void OverrideCopyFrom(PhoneDto idDto)
+        {
+            ContactId = idDto.ContactId;
+            Title = idDto.Title;
+            Number = idDto.Number;
+        }
+
+        protected override bool OverrideEquals(PhoneDto idDto)
+        {
+            return
+                ContactId == idDto.ContactId &&
+                Title == idDto.Title &&
+                Number == idDto.Number;
+        }
     }
 
 }

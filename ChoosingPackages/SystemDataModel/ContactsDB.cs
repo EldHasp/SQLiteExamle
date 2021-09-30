@@ -1,64 +1,66 @@
-﻿using System.Data.Entity;
+﻿using SQLite.CodeFirst;
+using System.Data.Entity;
+using System.Data.SQLite;
 
 namespace SystemDataModel
 {
-    public class ContactsDB : DbContext
+
+    public class EFConfiguration : DbConfiguration
     {
-        public ContactsDB(string pathAndNameDB)
-            : base(pathAndNameDB)
+        public EFConfiguration()
         {
-
-            //PathAndNameDB = pathAndNameDB;
-            //if (!File.Exists(pathAndNameDB))
-            //{
-            //    //string folder = Path.GetDirectoryName(pathAndNameDB);
-            //    //if (!string.IsNullOrEmpty(folder) && !Directory.Exists(folder))
-            //    //{
-            //    //    DirectoryInfo directory = Directory.CreateDirectory(folder);
-            //    //    pathAndNameDB = Path.Combine(directory.FullName, Path.GetFileName(pathAndNameDB));
-            //    //    PathAndNameDB = pathAndNameDB;
-            //    //}
-            //    Database.EnsureCreated();
-            //}
+            SetProviderFactory("System.Data.SQLite", System.Data.SQLite.SQLiteFactory.Instance);
+            SetProviderFactory("System.Data.SQLite.EF6", System.Data.SQLite.EF6.SQLiteProviderFactory.Instance);
+            SetProviderServices("System.Data.SQLite", (System.Data.Entity.Core.Common.DbProviderServices)System.Data.SQLite.EF6.SQLiteProviderFactory.Instance.GetService(typeof(System.Data.Entity.Core.Common.DbProviderServices)));
         }
-
-
-        //protected override void OnConfiguring(DbContextOptionsBuilder options)
-        //{
-        //    options.UseSqlite($"Data Source={PathAndNameDB}");
-        //}
-
-        //protected override void OnModelCreating(ModelBuilder modelBuilder)
-        //{
-        //    modelBuilder.Entity<ContactEntity>().HasData(GetDefaultContacts());
-        //    modelBuilder.Entity<PhoneEntity>().HasData(GetDefaultPhones());
-
-        //    base.OnModelCreating(modelBuilder);
-        //}
-
-        //private ContactEntity[] GetDefaultContacts()
-        //{
-        //    return new ContactEntity[]
-        //    {
-        //        new ContactEntity() {Id = 123, Name="Сергей (Exampl)"},
-        //        new ContactEntity() {Id = 567, Name="Алексей (Exampl)"}
-        //    };
-        //}
-        //private PhoneEntity[] GetDefaultPhones()
-        //{
-        //    return new PhoneEntity[]
-        //    {
-        //        new PhoneEntity() {Id = 9, ContactId = 123,  Title="Пожарная", Number="01"},
-        //        new PhoneEntity() {Id = 23, ContactId = 567,  Title="Полиция", Number="02"},
-        //        new PhoneEntity() {Id = 87, ContactId = 123,  Title="Скорая", Number="03"},
-        //        new PhoneEntity() {Id = 54, ContactId = 567,  Title="МЧС", Number="112"}
-        //    };
-        //}
-
-        //public string PathAndNameDB { get; }
-        public DbSet<ContactEntity> Contacts { get; set; }
-        public DbSet<PhoneEntity> Phones { get; set; }
-
     }
 
+    [DbConfigurationType(typeof(EFConfiguration))]
+    public class ContactsDB : DbContext
+    {
+        private static readonly object locker = new object();
+        public ContactsDB(string pathAndNameDB)
+            : base(
+                  new SQLiteConnection()
+                  {
+                      ConnectionString = new SQLiteConnectionStringBuilder()
+                      {
+                          DataSource = pathAndNameDB
+                      }
+                      .ConnectionString
+                  },
+                  true)
+        {
+            // Проверяется наличие базы.
+            // Если базы нет,
+            // то она автоматически создаётся и
+            // заполняется данными для примера.
+            lock (locker)
+                if (!Database.Exists())
+                {
+                    Contacts.AddRange(new ContactEntity[]
+                        {
+                            new ContactEntity() {Id = 123, Name="Сергей (Exampl)"},
+                            new ContactEntity() {Id = 567, Name="Алексей (Exampl)"}
+                        });
+                    Phones.AddRange(new PhoneEntity[]
+                    {
+                        new PhoneEntity() {Id = 9, ContactId = 123,  Title="Пожарная", Number="01"},
+                        new PhoneEntity() {Id = 23, ContactId = 567,  Title="Полиция", Number="02"},
+                        new PhoneEntity() {Id = 87, ContactId = 123,  Title="Скорая", Number="03"},
+                        new PhoneEntity() {Id = 54, ContactId = 567,  Title="МЧС", Number="112"}
+                    });
+
+                    SaveChanges();
+                }
+        }
+
+        protected override void OnModelCreating(DbModelBuilder modelBuilder)
+        {
+            var sqliteConnectionInitializer = new SqliteCreateDatabaseIfNotExists<ContactsDB>(modelBuilder);
+            Database.SetInitializer(sqliteConnectionInitializer);
+        }
+        public DbSet<ContactEntity> Contacts { get; set; }
+        public DbSet<PhoneEntity> Phones { get; set; }
+    }
 }
