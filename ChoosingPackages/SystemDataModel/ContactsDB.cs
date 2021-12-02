@@ -15,20 +15,23 @@ namespace SystemDataModel
         }
     }
 
+
     [DbConfigurationType(typeof(EFConfiguration))]
     public class ContactsDB : DbContext
     {
+        private static SQLiteConnection SQLiteConnection => new SQLiteConnection()
+        {
+            ConnectionString = new SQLiteConnectionStringBuilder()
+            {
+                DataSource = @"C:\SQLite\contacs.db",
+
+            }
+                          .ConnectionString
+        };
         private static readonly object locker = new object();
         public ContactsDB(string pathAndNameDB)
             : base(
-                  new SQLiteConnection()
-                  {
-                      ConnectionString = new SQLiteConnectionStringBuilder()
-                      {
-                          DataSource = pathAndNameDB
-                      }
-                      .ConnectionString
-                  },
+                  SQLiteConnection,
                   true)
         {
             // Проверяется наличие базы.
